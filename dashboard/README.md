@@ -79,14 +79,36 @@ Your system reads this and replies by calling `POST /api/send`.
 > whatsapp-web.js launches a real Chromium browser and needs a
 > **long-running process** plus a **persistent disk** for the session.
 
-Use a host that provides those, for example:
+### Deploy on Railway (recommended)
 
-- **Railway** – add the repo, set the start command to `npm run dashboard`,
-  add a persistent volume mounted where `SESSION_PATH` points.
-- **Render** – Web Service, start command `npm run dashboard`, add a Disk.
-- **Fly.io** – add a volume and mount it for the session data.
-- **A VPS** – run with `pm2 start dashboard/server.js` behind Nginx.
+A `Dockerfile` at the repo root already installs everything Chromium needs, so
+Railway builds it with no extra setup.
+
+1. **Create the project** – Railway → *New Project* → *Deploy from GitHub repo*
+   → pick this repo and the `claude/dashboard-readiness-yzpfn9` branch.
+   Railway detects the `Dockerfile` automatically.
+2. **Add a persistent volume** (so you don't re-scan the QR on every restart)
+   – service → *Variables/Settings* → *Volumes* → add a volume mounted at
+   **`/data`**. The Dockerfile already sets `SESSION_PATH=/data/.wwebjs_auth`.
+3. **Set environment variables** – service → *Variables*:
+   - `API_KEY` = a long random secret (required)
+   - `WEBHOOK_URL` = your endpoint (optional)
+   - Don't set `PORT`; Railway provides it and the server reads it.
+4. **Deploy**, then open the generated public URL, paste your `API_KEY`,
+   click *ابدأ الجلسة*, and scan the QR.
+
+> The first boot builds the image (installs Chromium libs) and can take a few
+> minutes — that's normal.
+
+### Other hosts
+
+- **Render** – New *Web Service*, Docker runtime (uses the same `Dockerfile`),
+  add a Disk mounted at `/data`.
+- **Fly.io** – `fly launch` (detects the Dockerfile), add a volume for `/data`.
+- **A VPS** – `docker build -t wa-dash . && docker run -p 3000:3000 \
+  -e API_KEY=... -v $PWD/data:/data wa-dash`, or run
+  `pm2 start dashboard/server.js` behind Nginx.
 
 On all of these, set `API_KEY` (and optionally `WEBHOOK_URL`) as environment
-variables, and make sure the session directory is on a persistent volume so you
-don't have to re-scan the QR after every restart.
+variables, and keep the session directory on a persistent volume so you don't
+have to re-scan the QR after every restart.
