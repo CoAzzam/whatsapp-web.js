@@ -8,6 +8,7 @@
         "test": "mocha tests --recursive --timeout 5000",
         "test-single": "mocha",
         "shell": "node --experimental-repl-await ./shell.js",
+        "dashboard": "node ./dashboard/server.js",
         "generate-docs": "npx jsdoc --configure .jsdoc.json --verbose",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
@@ -35,11 +36,13 @@
     },
     "homepage": "https://wwebjs.dev/",
     "dependencies": {
+        "express": "^4.22.2",
         "fluent-ffmpeg": "2.1.3",
         "mime": "3.0.0",
         "node-fetch": "2.7.0",
         "node-webpmux": "3.2.1",
-        "puppeteer": "24.38.0"
+        "puppeteer": "24.38.0",
+        "qrcode": "^1.5.4"
     },
     "devDependencies": {
         "@commitlint/cli": "^20.4.3",

@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>WhatsApp Dashboard</title>
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                font-family: -apple-system, 'Segoe UI', Tahoma, sans-serif;
+                background: #f0f2f5;
+                margin: 0;
+                padding: 24px;
+                color: #111b21;
+            }
+            .card {
+                max-width: 480px;
+                margin: 0 auto;
+                background: #fff;
+                border-radius: 14px;
+                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+                padding: 28px;
+            }
+            h1 {
+                font-size: 20px;
+                margin: 0 0 4px;
+            }
+            .sub {
+                color: #667781;
+                font-size: 13px;
+                margin-bottom: 20px;
+            }
+            .status {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 13px;
+                font-weight: 600;
+                margin-bottom: 16px;
+            }
+            .dot {
+                width: 9px;
+                height: 9px;
+                border-radius: 50%;
+                background: #999;
+            }
+            .status.ready {
+                background: #d9fdd3;
+                color: #1a7f37;
+            }
+            .status.ready .dot {
+                background: #1a7f37;
+            }
+            .status.qr,
+            .status.authenticated,
+            .status.initializing {
+                background: #fff3cd;
+                color: #8a6d00;
+            }
+            .status.qr .dot {
+                background: #8a6d00;
+            }
+            .status.disconnected,
+            .status.idle {
+                background: #ffe0e0;
+                color: #b42318;
+            }
+            .qr-box {
+                text-align: center;
+                margin: 16px 0;
+            }
+            .qr-box img {
+                border: 8px solid #fff;
+                border-radius: 8px;
+            }
+            .qr-hint {
+                font-size: 13px;
+                color: #667781;
+                margin-top: 8px;
+            }
+            .account {
+                background: #f0f2f5;
+                border-radius: 10px;
+                padding: 14px;
+                margin: 12px 0;
+                font-size: 14px;
+            }
+            .account b {
+                color: #008069;
+            }
+            button {
+                width: 100%;
+                padding: 12px;
+                border: 0;
+                border-radius: 8px;
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
+                margin-top: 8px;
+            }
+            .btn-primary {
+                background: #008069;
+                color: #fff;
+            }
+            .btn-danger {
+                background: #fff;
+                color: #b42318;
+                border: 1px solid #f0c2c2;
+            }
+            .field {
+                margin: 14px 0;
+            }
+            .field label {
+                display: block;
+                font-size: 13px;
+                margin-bottom: 6px;
+                color: #667781;
+            }
+            .field input {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #d1d7db;
+                border-radius: 8px;
+                font-size: 14px;
+            }
+            .divider {
+                border: 0;
+                border-top: 1px solid #e9edef;
+                margin: 22px 0;
+            }
+            .err {
+                color: #b42318;
+                font-size: 13px;
+                margin-top: 8px;
+            }
+            .send-result {
+                font-size: 13px;
+                margin-top: 8px;
+            }
+            details {
+                margin-top: 16px;
+                font-size: 13px;
+                color: #667781;
+            }
+            code {
+                background: #f0f2f5;
+                padding: 1px 5px;
+                border-radius: 4px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h1>WhatsApp Dashboard</h1>
+            <div class="sub">اربط جلسة واتساب، امسح QR، وأرسل الرسائل.</div>
+
+            <div id="status" class="status idle">
+                <span class="dot"></span><span id="statusText">—</span>
+            </div>
+
+            <div class="field">
+                <label>API Key</label>
+                <input
+                    id="apiKey"
+                    type="password"
+                    placeholder="اكتب مفتاح الـ API"
+                />
+            </div>
+
+            <div id="qrArea"></div>
+            <div id="accountArea"></div>
+
+            <button class="btn-primary" id="startBtn">
+                ابدأ الجلسة / أظهر QR
+            </button>
+            <button class="btn-danger" id="logoutBtn" style="display: none">
+                تسجيل خروج
+            </button>
+
+            <hr class="divider" />
+
+            <h1 style="font-size: 16px">إرسال رسالة تجريبية</h1>
+            <div class="field">
+                <label>الرقم (بدون +، مثال: 9665XXXXXXXX)</label>
+                <input id="toNumber" placeholder="9665XXXXXXXX" />
+            </div>
+            <div class="field">
+                <label>الرسالة</label>
+                <input id="toMessage" placeholder="اكتب رسالتك" />
+            </div>
+            <button class="btn-primary" id="sendBtn">إرسال</button>
+            <div id="sendResult" class="send-result"></div>
+
+            <details>
+                <summary>كيف أرسل عن طريق الـ API؟</summary>
+                <p>
+                    استخدم <code>POST /api/send</code> مع الهيدر
+                    <code>x-api-key</code>:
+                </p>
+                <pre
+                    style="white-space: pre-wrap"
+                ><code>curl -X POST /api/send \
+  -H "x-api-key: YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"number":"9665XXXXXXXX","message":"مرحبا"}'</code></pre>
+                <p id="webhookNote"></p>
+            </details>
+        </div>
+
+        <script>
+            const $ = (id) => document.getElementById(id);
+            const apiKeyInput = $('apiKey');
+            // Remember the API key locally for convenience.
+            apiKeyInput.value = localStorage.getItem('wa_api_key') || '';
+            apiKeyInput.addEventListener('input', () =>
+                localStorage.setItem('wa_api_key', apiKeyInput.value),
+            );
+
+            const labels = {
+                idle: 'غير مفعّل',
+                initializing: 'جاري التشغيل…',
+                qr: 'بانتظار مسح QR',
+                authenticated: 'تم التوثيق…',
+                ready: 'متصل وجاهز',
+                disconnected: 'منقطع',
+            };
+
+            async function refresh() {
+                try {
+                    const r = await fetch('/api/status');
+                    const s = await r.json();
+                    const box = $('status');
+                    box.className = 'status ' + s.status;
+                    $('statusText').textContent = labels[s.status] || s.status;
+
+                    $('qrArea').innerHTML = s.qr
+                        ? `<div class="qr-box"><img src="${s.qr}" alt="QR" />
+                       <div class="qr-hint">افتح واتساب ← الأجهزة المرتبطة ← ربط جهاز</div></div>`
+                        : '';
+
+                    $('accountArea').innerHTML = s.info
+                        ? `<div class="account">مسجّل باسم <b>${s.info.pushname || ''}</b><br>
+                       <span style="color:#667781">${s.info.wid || ''}</span></div>`
+                        : '';
+
+                    $('logoutBtn').style.display =
+                        s.status === 'ready' || s.status === 'authenticated'
+                            ? 'block'
+                            : 'none';
+                    $('startBtn').style.display =
+                        s.status === 'ready' ? 'none' : 'block';
+
+                    $('webhookNote').textContent = s.webhookConfigured
+                        ? 'الـ Webhook مفعّل: كل رسالة واردة تُرسل تلقائياً لنظامك.'
+                        : 'الـ Webhook غير مفعّل (اضبط WEBHOOK_URL في الإعدادات).';
+                } catch (e) {
+                    /* ignore transient errors */
+                }
+            }
+
+            function headers() {
+                return {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKeyInput.value,
+                };
+            }
+
+            $('startBtn').onclick = async () => {
+                await fetch('/api/session/start', {
+                    method: 'POST',
+                    headers: headers(),
+                });
+                refresh();
+            };
+            $('logoutBtn').onclick = async () => {
+                if (!confirm('تأكيد تسجيل الخروج ومسح الجلسة؟')) return;
+                await fetch('/api/session/logout', {
+                    method: 'POST',
+                    headers: headers(),
+                });
+                refresh();
+            };
+            $('sendBtn').onclick = async () => {
+                $('sendResult').textContent = 'جاري الإرسال…';
+                const r = await fetch('/api/send', {
+                    method: 'POST',
+                    headers: headers(),
+                    body: JSON.stringify({
+                        number: $('toNumber').value,
+                        message: $('toMessage').value,
+                    }),
+                });
+                const data = await r.json();
+                $('sendResult').innerHTML = r.ok
+                    ? '<span style="color:#1a7f37">✓ تم الإرسال</span>'
+                    : `<span class="err">✗ ${data.error || 'خطأ'}</span>`;
+            };
+
+            refresh();
+            setInterval(refresh, 2500);
+        </script>
+    </body>
+</html>
