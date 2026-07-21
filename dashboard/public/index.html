@@ -16,8 +16,8 @@
                 color: #111b21;
             }
             .card {
-                max-width: 480px;
-                margin: 0 auto;
+                max-width: 520px;
+                margin: 0 auto 16px;
                 background: #fff;
                 border-radius: 14px;
                 box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
@@ -26,6 +26,10 @@
             h1 {
                 font-size: 20px;
                 margin: 0 0 4px;
+            }
+            h2 {
+                font-size: 16px;
+                margin: 0 0 12px;
             }
             .sub {
                 color: #667781;
@@ -93,7 +97,6 @@
                 color: #008069;
             }
             button {
-                width: 100%;
                 padding: 12px;
                 border: 0;
                 border-radius: 8px;
@@ -101,6 +104,9 @@
                 font-weight: 600;
                 cursor: pointer;
                 margin-top: 8px;
+            }
+            .full {
+                width: 100%;
             }
             .btn-primary {
                 background: #008069;
@@ -110,6 +116,12 @@
                 background: #fff;
                 color: #b42318;
                 border: 1px solid #f0c2c2;
+            }
+            .btn-ghost {
+                background: #f0f2f5;
+                color: #111b21;
+                font-size: 13px;
+                padding: 8px 12px;
             }
             .field {
                 margin: 14px 0;
@@ -126,6 +138,18 @@
                 border: 1px solid #d1d7db;
                 border-radius: 8px;
                 font-size: 14px;
+                font-family: inherit;
+            }
+            .secret-row {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+            .secret-row input {
+                flex: 1;
+                background: #f8f9fa;
+                font-family: monospace;
+                font-size: 12px;
             }
             .divider {
                 border: 0;
@@ -137,12 +161,18 @@
                 font-size: 13px;
                 margin-top: 8px;
             }
-            .send-result {
+            .ok {
+                color: #1a7f37;
                 font-size: 13px;
                 margin-top: 8px;
             }
+            .hint {
+                font-size: 12px;
+                color: #667781;
+                margin-top: 4px;
+            }
             details {
-                margin-top: 16px;
+                margin-top: 8px;
                 font-size: 13px;
                 color: #667781;
             }
@@ -151,74 +181,148 @@
                 padding: 1px 5px;
                 border-radius: 4px;
             }
+            pre {
+                background: #f0f2f5;
+                padding: 12px;
+                border-radius: 8px;
+                overflow-x: auto;
+            }
+            .hidden {
+                display: none;
+            }
         </style>
     </head>
     <body>
-        <div class="card">
-            <h1>WhatsApp Dashboard</h1>
-            <div class="sub">اربط جلسة واتساب، امسح QR، وأرسل الرسائل.</div>
-
-            <div id="status" class="status idle">
-                <span class="dot"></span><span id="statusText">—</span>
-            </div>
-
+        <!-- Login -->
+        <div id="loginView" class="card">
+            <h1>تسجيل دخول</h1>
+            <div class="sub">أدخل كلمة سر المشرف للوصول للوحة التحكم.</div>
             <div class="field">
-                <label>API Key</label>
+                <label>كلمة السر</label>
                 <input
-                    id="apiKey"
+                    id="loginPassword"
                     type="password"
-                    placeholder="اكتب مفتاح الـ API"
+                    placeholder="••••••••"
                 />
             </div>
+            <button class="btn-primary full" id="loginBtn">دخول</button>
+            <div id="loginError" class="err"></div>
+        </div>
 
-            <div id="qrArea"></div>
-            <div id="accountArea"></div>
+        <!-- Dashboard -->
+        <div id="appView" class="hidden">
+            <div class="card">
+                <h1>WhatsApp Dashboard</h1>
+                <div class="sub">اربط جلسة واتساب، امسح QR، وأرسل الرسائل.</div>
 
-            <button class="btn-primary" id="startBtn">
-                ابدأ الجلسة / أظهر QR
-            </button>
-            <button class="btn-danger" id="logoutBtn" style="display: none">
-                تسجيل خروج
-            </button>
+                <div id="status" class="status idle">
+                    <span class="dot"></span><span id="statusText">—</span>
+                </div>
+                <button
+                    class="btn-ghost"
+                    id="adminLogoutBtn"
+                    style="float: left"
+                >
+                    خروج المشرف
+                </button>
 
-            <hr class="divider" />
+                <div id="qrArea"></div>
+                <div id="accountArea"></div>
 
-            <h1 style="font-size: 16px">إرسال رسالة تجريبية</h1>
-            <div class="field">
-                <label>الرقم (بدون +، مثال: 9665XXXXXXXX)</label>
-                <input id="toNumber" placeholder="9665XXXXXXXX" />
+                <button class="btn-primary full" id="startBtn">
+                    ابدأ الجلسة / أظهر QR
+                </button>
+                <button class="btn-danger full hidden" id="logoutBtn">
+                    تسجيل خروج واتساب
+                </button>
             </div>
-            <div class="field">
-                <label>الرسالة</label>
-                <input id="toMessage" placeholder="اكتب رسالتك" />
-            </div>
-            <button class="btn-primary" id="sendBtn">إرسال</button>
-            <div id="sendResult" class="send-result"></div>
 
-            <details>
-                <summary>كيف أرسل عن طريق الـ API؟</summary>
-                <p>
-                    استخدم <code>POST /api/send</code> مع الهيدر
-                    <code>x-api-key</code>:
-                </p>
-                <pre
-                    style="white-space: pre-wrap"
-                ><code>curl -X POST /api/send \
-  -H "x-api-key: YOUR_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"number":"9665XXXXXXXX","message":"مرحبا"}'</code></pre>
-                <p id="webhookNote"></p>
-            </details>
+            <!-- Settings -->
+            <div class="card">
+                <h2>الإعدادات</h2>
+
+                <div class="field">
+                    <label>API Key (لإرسال الرسائل من نظامك)</label>
+                    <div class="secret-row">
+                        <input id="apiKey" readonly />
+                        <button class="btn-ghost" data-copy="apiKey">
+                            نسخ
+                        </button>
+                        <button class="btn-ghost" id="regenKeyBtn">
+                            تجديد
+                        </button>
+                    </div>
+                    <div class="hint">
+                        أرسله في الهيدر <code>x-api-key</code>. التجديد يبطل
+                        المفتاح القديم فوراً.
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Webhook URL (تُرسل له الرسائل الواردة)</label>
+                    <input
+                        id="webhookUrl"
+                        placeholder="https://your-system.com/webhook"
+                    />
+                    <button class="btn-primary" id="saveWebhookBtn">حفظ</button>
+                    <span id="webhookSaved" class="ok"></span>
+                </div>
+
+                <div class="field">
+                    <label>Webhook Secret (للتحقق من التوقيع)</label>
+                    <div class="secret-row">
+                        <input id="webhookSecret" readonly />
+                        <button class="btn-ghost" data-copy="webhookSecret">
+                            نسخ
+                        </button>
+                        <button class="btn-ghost" id="regenSecretBtn">
+                            تجديد
+                        </button>
+                    </div>
+                    <div class="hint">
+                        كل طلب webhook يُوقّع بـ HMAC-SHA256 في الهيدر
+                        <code>X-Signature: sha256=…</code>
+                    </div>
+                    <details>
+                        <summary>كيف أتحقق من التوقيع؟ (Node.js)</summary>
+                        <pre><code>const crypto = require('crypto');
+const sig = req.get('X-Signature'); // "sha256=abc..."
+const expected = 'sha256=' + crypto
+  .createHmac('sha256', WEBHOOK_SECRET)
+  .update(rawBody) // نص الـ body كما وصل
+  .digest('hex');
+const ok = sig === expected;</code></pre>
+                    </details>
+                </div>
+            </div>
+
+            <!-- Send test -->
+            <div class="card">
+                <h2>إرسال رسالة تجريبية</h2>
+                <div class="field">
+                    <label>الرقم (بدون +، مثال: 9665XXXXXXXX)</label>
+                    <input id="toNumber" placeholder="9665XXXXXXXX" />
+                </div>
+                <div class="field">
+                    <label>الرسالة</label>
+                    <input id="toMessage" placeholder="اكتب رسالتك" />
+                </div>
+                <button class="btn-primary full" id="sendBtn">إرسال</button>
+                <div id="sendResult"></div>
+            </div>
         </div>
 
         <script>
             const $ = (id) => document.getElementById(id);
-            const apiKeyInput = $('apiKey');
-            // Remember the API key locally for convenience.
-            apiKeyInput.value = localStorage.getItem('wa_api_key') || '';
-            apiKeyInput.addEventListener('input', () =>
-                localStorage.setItem('wa_api_key', apiKeyInput.value),
-            );
+            let token = localStorage.getItem('wa_admin_token') || '';
+            let apiKeyValue = '';
+
+            function authHeaders() {
+                return {
+                    'Content-Type': 'application/json',
+                    'x-admin-token': token,
+                };
+            }
 
             const labels = {
                 idle: 'غير مفعّل',
@@ -229,50 +333,150 @@
                 disconnected: 'منقطع',
             };
 
+            // ---- Login ----
+            $('loginBtn').onclick = async () => {
+                $('loginError').textContent = '';
+                const r = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        password: $('loginPassword').value,
+                    }),
+                });
+                if (!r.ok) {
+                    $('loginError').textContent = 'كلمة السر غير صحيحة';
+                    return;
+                }
+                const data = await r.json();
+                token = data.token;
+                localStorage.setItem('wa_admin_token', token);
+                showApp();
+            };
+            $('loginPassword').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') $('loginBtn').click();
+            });
+
+            $('adminLogoutBtn').onclick = async () => {
+                await fetch('/api/logout-admin', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                }).catch(() => {});
+                token = '';
+                localStorage.removeItem('wa_admin_token');
+                location.reload();
+            };
+
+            function showLogin() {
+                $('loginView').classList.remove('hidden');
+                $('appView').classList.add('hidden');
+            }
+            async function showApp() {
+                $('loginView').classList.add('hidden');
+                $('appView').classList.remove('hidden');
+                await loadSettings();
+                refresh();
+            }
+
+            // ---- Settings ----
+            async function loadSettings() {
+                const r = await fetch('/api/settings', {
+                    headers: authHeaders(),
+                });
+                if (!r.ok) return;
+                const s = await r.json();
+                apiKeyValue = s.apiKey;
+                $('apiKey').value = s.apiKey;
+                $('webhookUrl').value = s.webhookUrl || '';
+                $('webhookSecret').value = s.webhookSecret;
+            }
+
+            $('saveWebhookBtn').onclick = async () => {
+                const r = await fetch('/api/settings/webhook', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ webhookUrl: $('webhookUrl').value }),
+                });
+                if (r.ok) {
+                    $('webhookSaved').textContent = '✓ تم الحفظ';
+                    setTimeout(
+                        () => ($('webhookSaved').textContent = ''),
+                        2000,
+                    );
+                }
+            };
+
+            $('regenKeyBtn').onclick = async () => {
+                if (!confirm('تجديد المفتاح سيبطل القديم فوراً. متأكد؟'))
+                    return;
+                const r = await fetch('/api/settings/apikey/regenerate', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                });
+                const d = await r.json();
+                apiKeyValue = d.apiKey;
+                $('apiKey').value = d.apiKey;
+            };
+
+            $('regenSecretBtn').onclick = async () => {
+                if (
+                    !confirm('تجديد السر سيبطل القديم. حدّث نظامك بعده. متأكد؟')
+                )
+                    return;
+                const r = await fetch('/api/settings/secret/regenerate', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                });
+                const d = await r.json();
+                $('webhookSecret').value = d.webhookSecret;
+            };
+
+            document.querySelectorAll('[data-copy]').forEach((btn) => {
+                btn.onclick = () => {
+                    const el = $(btn.getAttribute('data-copy'));
+                    navigator.clipboard.writeText(el.value);
+                    const old = btn.textContent;
+                    btn.textContent = '✓';
+                    setTimeout(() => (btn.textContent = old), 1200);
+                };
+            });
+
+            // ---- Session / status ----
             async function refresh() {
                 try {
-                    const r = await fetch('/api/status');
+                    const r = await fetch('/api/status', {
+                        headers: authHeaders(),
+                    });
+                    if (r.status === 401) return showLogin();
                     const s = await r.json();
-                    const box = $('status');
-                    box.className = 'status ' + s.status;
+                    $('status').className = 'status ' + s.status;
                     $('statusText').textContent = labels[s.status] || s.status;
 
                     $('qrArea').innerHTML = s.qr
                         ? `<div class="qr-box"><img src="${s.qr}" alt="QR" />
-                       <div class="qr-hint">افتح واتساب ← الأجهزة المرتبطة ← ربط جهاز</div></div>`
+                           <div class="qr-hint">افتح واتساب ← الأجهزة المرتبطة ← ربط جهاز</div></div>`
                         : '';
 
                     $('accountArea').innerHTML = s.info
                         ? `<div class="account">مسجّل باسم <b>${s.info.pushname || ''}</b><br>
-                       <span style="color:#667781">${s.info.wid || ''}</span></div>`
+                           <span style="color:#667781">${s.info.wid || ''}</span></div>`
                         : '';
 
-                    $('logoutBtn').style.display =
-                        s.status === 'ready' || s.status === 'authenticated'
-                            ? 'block'
-                            : 'none';
-                    $('startBtn').style.display =
-                        s.status === 'ready' ? 'none' : 'block';
-
-                    $('webhookNote').textContent = s.webhookConfigured
-                        ? 'الـ Webhook مفعّل: كل رسالة واردة تُرسل تلقائياً لنظامك.'
-                        : 'الـ Webhook غير مفعّل (اضبط WEBHOOK_URL في الإعدادات).';
+                    const linked =
+                        s.status === 'ready' || s.status === 'authenticated';
+                    $('logoutBtn').classList.toggle('hidden', !linked);
+                    $('startBtn').classList.toggle(
+                        'hidden',
+                        s.status === 'ready',
+                    );
                 } catch (e) {
                     /* ignore transient errors */
                 }
             }
 
-            function headers() {
-                return {
-                    'Content-Type': 'application/json',
-                    'x-api-key': apiKeyInput.value,
-                };
-            }
-
             $('startBtn').onclick = async () => {
                 await fetch('/api/session/start', {
                     method: 'POST',
-                    headers: headers(),
+                    headers: authHeaders(),
                 });
                 refresh();
             };
@@ -280,15 +484,20 @@
                 if (!confirm('تأكيد تسجيل الخروج ومسح الجلسة؟')) return;
                 await fetch('/api/session/logout', {
                     method: 'POST',
-                    headers: headers(),
+                    headers: authHeaders(),
                 });
                 refresh();
             };
+
             $('sendBtn').onclick = async () => {
-                $('sendResult').textContent = 'جاري الإرسال…';
+                $('sendResult').innerHTML =
+                    '<div class="hint">جاري الإرسال…</div>';
                 const r = await fetch('/api/send', {
                     method: 'POST',
-                    headers: headers(),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKeyValue,
+                    },
                     body: JSON.stringify({
                         number: $('toNumber').value,
                         message: $('toMessage').value,
@@ -296,12 +505,22 @@
                 });
                 const data = await r.json();
                 $('sendResult').innerHTML = r.ok
-                    ? '<span style="color:#1a7f37">✓ تم الإرسال</span>'
-                    : `<span class="err">✗ ${data.error || 'خطأ'}</span>`;
+                    ? '<div class="ok">✓ تم الإرسال</div>'
+                    : `<div class="err">✗ ${data.error || 'خطأ'}</div>`;
             };
 
-            refresh();
-            setInterval(refresh, 2500);
+            // ---- Boot ----
+            (async function boot() {
+                if (!token) return showLogin();
+                const r = await fetch('/api/status', {
+                    headers: authHeaders(),
+                });
+                if (r.status === 401) return showLogin();
+                showApp();
+            })();
+            setInterval(() => {
+                if (!$('appView').classList.contains('hidden')) refresh();
+            }, 2500);
         </script>
     </body>
 </html>
