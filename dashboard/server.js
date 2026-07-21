@@ -323,6 +323,30 @@ app.post('/api/session/logout', requireAdmin, async (req, res) => {
     res.json({ status: state.status });
 });
 
+// Hard reset: destroy the client AND delete the saved session files, so a
+// corrupted session (which can throw "Cannot read properties of undefined")
+// is wiped and the next start shows a fresh QR.
+app.post('/api/session/reset', requireAdmin, async (req, res) => {
+    try {
+        if (client) {
+            await client.destroy().catch(() => {});
+        }
+    } finally {
+        client = null;
+        state.status = 'idle';
+        state.qrDataUrl = null;
+        state.info = null;
+        state.lastError = null;
+        try {
+            fs.rmSync(SESSION_PATH, { recursive: true, force: true });
+            log('session files cleared:', SESSION_PATH);
+        } catch (err) {
+            log('session reset error:', err.message);
+        }
+    }
+    res.json({ ok: true });
+});
+
 // ---------------------------------------------------------------------------
 // Send route (API key — for your external system)
 // ---------------------------------------------------------------------------
