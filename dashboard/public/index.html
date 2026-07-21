@@ -310,6 +310,39 @@ const ok = sig === expected;</code></pre>
                 <button class="btn-primary full" id="sendBtn">إرسال</button>
                 <div id="sendResult"></div>
             </div>
+
+            <!-- API docs (copy for any AI) -->
+            <div class="card">
+                <h2>توثيق الـ API — انسخه لأي AI</h2>
+                <div class="hint">
+                    كل شي معبّأ برابطك ومفتاحك. انسخه وأعطه أي أداة أو AI وبيفهم
+                    كيف يرسل رسالة نصية.
+                </div>
+
+                <div class="field">
+                    <label>مثال cURL (إرسال نص)</label>
+                    <button class="btn-ghost" data-copytext="curlExample">
+                        نسخ
+                    </button>
+                    <pre><code id="curlExample"></code></pre>
+                </div>
+
+                <div class="field">
+                    <label>مثال JavaScript (fetch)</label>
+                    <button class="btn-ghost" data-copytext="jsExample">
+                        نسخ
+                    </button>
+                    <pre><code id="jsExample"></code></pre>
+                </div>
+
+                <div class="field">
+                    <label>مواصفات كاملة لأي AI (انسخها والصقها)</label>
+                    <button class="btn-ghost" data-copytext="aiSpec">
+                        نسخ المواصفات
+                    </button>
+                    <pre><code id="aiSpec"></code></pre>
+                </div>
+            </div>
         </div>
 
         <script>
@@ -388,6 +421,50 @@ const ok = sig === expected;</code></pre>
                 $('apiKey').value = s.apiKey;
                 $('webhookUrl').value = s.webhookUrl || '';
                 $('webhookSecret').value = s.webhookSecret;
+                renderApiDocs(s.apiKey);
+            }
+
+            function renderApiDocs(key) {
+                const base = window.location.origin;
+
+                $('curlExample').textContent =
+                    `curl -X POST ${base}/api/send \\\n` +
+                    `  -H "x-api-key: ${key}" \\\n` +
+                    `  -H "Content-Type: application/json" \\\n` +
+                    `  -d '{"number":"9665XXXXXXXX","message":"مرحبا 👋"}'`;
+
+                $('jsExample').textContent =
+                    `await fetch("${base}/api/send", {\n` +
+                    `  method: "POST",\n` +
+                    `  headers: {\n` +
+                    `    "x-api-key": "${key}",\n` +
+                    `    "Content-Type": "application/json"\n` +
+                    `  },\n` +
+                    `  body: JSON.stringify({\n` +
+                    `    number: "9665XXXXXXXX",\n` +
+                    `    message: "مرحبا 👋"\n` +
+                    `  })\n` +
+                    `});`;
+
+                $('aiSpec').textContent =
+                    `WhatsApp Send-Text API\n` +
+                    `======================\n` +
+                    `Send a WhatsApp text message via a single HTTP request.\n\n` +
+                    `Endpoint:     POST ${base}/api/send\n` +
+                    `Auth header:  x-api-key: ${key}\n` +
+                    `Content-Type: application/json\n\n` +
+                    `Request body (JSON):\n` +
+                    `  number  (string, required) international number, digits only, no "+".\n` +
+                    `          Example: "9665XXXXXXXX". A full id "9665XXXXXXXX@c.us" also works.\n` +
+                    `  message (string, required) the text to send (supports Unicode/emoji).\n\n` +
+                    `Success (200): {"ok": true, "id": "...", "to": "9665XXXXXXXX@c.us"}\n` +
+                    `Errors: 401 invalid api key | 409 session not ready |\n` +
+                    `        400 missing number/message | 500 send failed\n\n` +
+                    `cURL example:\n` +
+                    `curl -X POST ${base}/api/send \\\n` +
+                    `  -H "x-api-key: ${key}" \\\n` +
+                    `  -H "Content-Type: application/json" \\\n` +
+                    `  -d '{"number":"9665XXXXXXXX","message":"Hello"}'`;
             }
 
             $('saveWebhookBtn').onclick = async () => {
@@ -436,6 +513,17 @@ const ok = sig === expected;</code></pre>
                     navigator.clipboard.writeText(el.value);
                     const old = btn.textContent;
                     btn.textContent = '✓';
+                    setTimeout(() => (btn.textContent = old), 1200);
+                };
+            });
+
+            // Copy text content of a <pre>/<code> block (API examples).
+            document.querySelectorAll('[data-copytext]').forEach((btn) => {
+                btn.onclick = () => {
+                    const el = $(btn.getAttribute('data-copytext'));
+                    navigator.clipboard.writeText(el.textContent);
+                    const old = btn.textContent;
+                    btn.textContent = '✓ تم النسخ';
                     setTimeout(() => (btn.textContent = old), 1200);
                 };
             });
