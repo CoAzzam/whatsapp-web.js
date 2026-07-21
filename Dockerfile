@@ -1,50 +1,26 @@
 # Dockerfile for the WhatsApp dashboard (Railway / Render / any container host).
 #
-# whatsapp-web.js runs a real Chromium via Puppeteer, which needs a set of
-# system libraries that slim Node images don't ship with. We install them here
-# and let Puppeteer use its own bundled, version-matched Chromium.
+# whatsapp-web.js runs a real Chromium via Puppeteer. Instead of hand-listing
+# Chromium's shared libraries (easy to miss one, which makes it fail silently),
+# we install Debian's `chromium` package — apt pulls in every dependency it
+# needs — and point Puppeteer at it via PUPPETEER_EXECUTABLE_PATH.
 
 FROM node:22-slim
 
-# System libraries required by Chromium/Puppeteer on Debian.
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
     ca-certificates \
     fonts-liberation \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libcairo2 \
-    libcups2 \
-    libdbus-1-3 \
-    libexpat1 \
-    libfontconfig1 \
-    libgbm1 \
-    libglib2.0-0 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libx11-6 \
-    libx11-xcb1 \
-    libxcb1 \
-    libxcomposite1 \
-    libxcursor1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libxi6 \
-    libxrandr2 \
-    libxrender1 \
-    libxss1 \
-    libxtst6 \
-    wget \
+    fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
+
+# Use the system Chromium and skip Puppeteer's own ~150MB download.
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 WORKDIR /app
 
 # Install dependencies first for better layer caching.
-# The Puppeteer postinstall downloads its bundled Chromium here.
 COPY package*.json ./
 RUN npm ci
 
@@ -52,7 +28,7 @@ RUN npm ci
 COPY . .
 
 # Store the WhatsApp session on a mounted volume in production
-# (set SESSION_PATH=/data/.wwebjs_auth and mount a Railway volume at /data).
+# (mount a Railway volume at /data).
 ENV NODE_ENV=production
 ENV SESSION_PATH=/data/.wwebjs_auth
 

@@ -228,6 +228,7 @@
 
                 <div id="qrArea"></div>
                 <div id="accountArea"></div>
+                <div id="errArea"></div>
 
                 <button class="btn-primary full" id="startBtn">
                     ابدأ الجلسة / أظهر QR
@@ -548,6 +549,12 @@ const ok = sig === expected;</code></pre>
                         ? `<div class="account">مسجّل باسم <b>${s.info.pushname || ''}</b><br>
                            <span style="color:#667781">${s.info.wid || ''}</span></div>`
                         : '';
+
+                    $('errArea').innerHTML =
+                        s.lastError && s.status !== 'ready'
+                            ? `<div class="account" style="background:#ffe0e0;color:#b42318">
+                               <b>خطأ:</b> ${s.lastError}</div>`
+                            : '';
 
                     const linked =
                         s.status === 'ready' || s.status === 'authenticated';

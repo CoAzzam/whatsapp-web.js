@@ -139,6 +139,9 @@ function startClient() {
         authStrategy: new LocalAuth({ dataPath: SESSION_PATH }),
         puppeteer: {
             headless: true,
+            // Use the system Chromium when provided (containers/Railway),
+            // otherwise fall back to Puppeteer's bundled build (local dev).
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
