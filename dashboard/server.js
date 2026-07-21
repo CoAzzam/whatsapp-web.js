@@ -52,6 +52,16 @@ function safeEqual(a, b) {
     return crypto.timingSafeEqual(ab, bb);
 }
 
+// Reject a promise if it doesn't settle in `ms`, so a hanging WhatsApp call
+// never leaves the HTTP request open forever.
+function withTimeout(promise, ms, label = 'operation timed out') {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(label)), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 // ---------------------------------------------------------------------------
 // Persisted config (api key, webhook url, webhook secret)
 // ---------------------------------------------------------------------------
@@ -332,12 +342,34 @@ app.post('/api/send', requireApiKey, async (req, res) => {
             .json({ error: 'number and message are required' });
     }
 
-    const chatId = String(number).includes('@')
-        ? String(number)
-        : `${String(number).replace(/\D/g, '')}@c.us`;
-
     try {
-        const sent = await client.sendMessage(chatId, message);
+        // Resolve the correct WhatsApp chat id. Using getNumberId validates
+        // that the number is actually registered and avoids sendMessage
+        // hanging forever on an unresolved/badly-formatted id.
+        let chatId;
+        if (String(number).includes('@')) {
+            chatId = String(number);
+        } else {
+            const digits = String(number).replace(/\D/g, '');
+            const numberId = await withTimeout(
+                client.getNumberId(digits),
+                20000,
+                'number lookup timed out',
+            );
+            if (!numberId) {
+                return res.status(422).json({
+                    error: 'number is not registered on WhatsApp',
+                    number: digits,
+                });
+            }
+            chatId = numberId._serialized;
+        }
+
+        const sent = await withTimeout(
+            client.sendMessage(chatId, message),
+            25000,
+            'send timed out',
+        );
         res.json({ ok: true, id: sent.id?._serialized, to: chatId });
     } catch (err) {
         res.status(500).json({ error: err.message });
